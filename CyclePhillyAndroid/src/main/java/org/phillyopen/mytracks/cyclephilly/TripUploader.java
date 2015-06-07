@@ -30,6 +30,8 @@
 
 package org.phillyopen.mytracks.cyclephilly;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.lang.String;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -299,6 +301,12 @@ public class TripUploader extends AsyncTask <Long, Integer, Boolean> {
   
         try {
             postRequest.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+            FileOutputStream writer = new FileOutputStream("DebugReportingJson.json", true);
+            BufferedOutputStream output = new BufferedOutputStream(writer);
+            output.write(postRequest.toString().getBytes());
+            output.flush();
+            output.close();
+
             HttpResponse response = client.execute(postRequest);
             String responseString = convertStreamToString(response.getEntity().getContent());
             Log.v("httpResponse", responseString);
