@@ -34,6 +34,7 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.lang.String;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -41,6 +42,7 @@ import android.provider.Settings.System;
 import android.provider.Settings.Secure;
 import android.util.Log;
 import android.widget.Toast;
+import android.app.Activity;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.params.BasicHttpParams;
@@ -73,6 +75,7 @@ import org.phillyopen.mytracks.cyclephilly.R;
 public class TripUploader extends AsyncTask <Long, Integer, Boolean> {
     Context mCtx;
     DbAdapter mDb;
+    String aRequestString;
 
     public static final String TRIP_COORDS_TIME = "rec";
     public static final String TRIP_COORDS_LAT = "lat";
@@ -287,25 +290,29 @@ public class TripUploader extends AsyncTask <Long, Integer, Boolean> {
         // set connection timeouts for HTTPClient
         HttpParams httpParameters = new BasicHttpParams();
         // Set the timeout in milliseconds until a connection is established.
-        // The default value is zero, that means the timeout is not used. 
+        // The default value is zero, that means the timeout is not used.
         int timeoutConnection = 5000;
         HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
-        // Set the default socket timeout (SO_TIMEOUT) 
+        // Set the default socket timeout (SO_TIMEOUT)
         // in milliseconds which is the timeout for waiting for data.
         int timeoutSocket = 90000;
         HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
         HttpClient client = new DefaultHttpClient(httpParameters);
-        
+
 
         HttpPost postRequest = new HttpPost(postUrl);
-  
+
         try {
+            aRequestString = convertStreamToString(postRequest.getEntity().getContent());
+
             postRequest.setEntity(new UrlEncodedFormEntity(nameValuePairs));
             FileOutputStream writer = new FileOutputStream("DebugReportingJson.json", true);
+            //Toast.makeText(getActivity(), "Saved!", 4);
             BufferedOutputStream output = new BufferedOutputStream(writer);
             output.write(postRequest.toString().getBytes());
             output.flush();
             output.close();
+
 
             HttpResponse response = client.execute(postRequest);
             String responseString = convertStreamToString(response.getEntity().getContent());
@@ -386,6 +393,15 @@ public class TripUploader extends AsyncTask <Long, Integer, Boolean> {
     @Override
     protected void onPostExecute(Boolean result) {
         try {
+            Toast.makeText(this.mCtx, aRequestString, Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_EMAIL, new String[] {"daniel.vainsencher@gmail.com"});
+            intent.putExtra(Intent.EXTRA_SUBJECT, "A sample response");
+            intent.putExtra(Intent.EXTRA_TEXT, aRequestString);
+            mCtx.startActivity(intent);
+
+
             if (result) {
                 Toast.makeText(mCtx.getApplicationContext(),"Trip uploaded successfully.", Toast.LENGTH_SHORT).show();
             } else {
